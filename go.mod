@@ -1,4 +1,4 @@
-module imessage-cl
+module imessage-bridge
 
 go 1.19
 
@@ -17,4 +17,4 @@ require (
 
 )
 
-// replace go.mau.fi/mautrix-imessage v0.0.0-20230127153638-7a05fcbb5469 => /home/ibrahim/legacy/imessage-bridge/imessage
+//replace go.mau.fi/mautrix-imessage v0.0.0-20230127153638-7a05fcbb5469 => /home/ibrahim/legacy/imessage-bridge/imessage
