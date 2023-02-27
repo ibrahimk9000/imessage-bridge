@@ -86,8 +86,8 @@ func (c *customBridge) HandleRemoteApiSend(msg Message) {
 
 func (c *customBridge) HandleRemoteApiReceive() {
 	client := &http.Client{Timeout: 60 * time.Second}
+	log.Println("ready to receive requests")
 	for {
-		log.Println("ready to receive requests")
 		respGet, err := client.Get(remoteApiAddress + "/webhook/imessage/messages/" + c.remoteApiAccountB64)
 		if err != nil {
 			log.Println(err)
@@ -153,12 +153,11 @@ func (c *customBridge) HandleFileSend(msg Message) {
 		}
 		fmt.Printf("Handle Attachment %s from user %s\n", fi.Name, msg.Channel)
 
-		resp, err := c.IM.SendFile(msg.Channel, "", fi.Name, path, "", 0, mtype, false, imessage.MessageMetadata{})
+		_, err = c.IM.SendFile(msg.Channel, "", fi.Name, path, "", 0, mtype, false, imessage.MessageMetadata{})
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		log.Println(resp)
 
 	}
 }
