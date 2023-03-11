@@ -102,10 +102,14 @@ func (imh *iMessageHandler) HandleMessage(msg *imessage.Message) {
 				userMembersID[member] = username
 			}
 		}
+
 		event = "new_users"
 	} else {
-		userMembersID[userID] = username
 		event = "direct_msg"
+	}
+	// in case contact info can't be fetched , it will populate the map with the sender info
+	if len(userMembersID) == 0 {
+		userMembersID[userID] = username
 	}
 	mtbridgeMsg := Message{
 		Text:      msg.Text,
