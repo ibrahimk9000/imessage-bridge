@@ -46,7 +46,6 @@ func main() {
 			continue
 		}
 		fmt.Println(ch.Members)
-		im.SendChatsInfoToRemote(ch)
 
 	}
 
