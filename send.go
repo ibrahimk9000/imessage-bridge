@@ -88,11 +88,14 @@ func (c *customBridge) HandleRemoteApiReceive() {
 	client := &http.Client{Timeout: 60 * time.Second}
 	log.Println("ready to receive requests")
 	for {
-		respGet, err := client.Get(remoteApiAddress + "/webhook/imessage/messages/" + c.remoteApiAccountB64)
+		respGet, err := client.Get(remoteApiAddress + "/webhook/imessage/custom-stream/" + c.remoteApiAccountB64)
 		if err != nil {
 			log.Println(err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		defer respGet.Body.Close()
+
 		bodyGet, err := io.ReadAll(respGet.Body)
 		if err != nil {
 			log.Println(err)
