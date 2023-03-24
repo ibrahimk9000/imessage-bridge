@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"io"
+	"os"
 	"time"
 
 	"go.mau.fi/mautrix-imessage/imessage"
@@ -15,6 +17,15 @@ import (
 )
 
 func main() {
+
+	f, err := os.OpenFile("imessage.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	multi := io.MultiWriter(os.Stdout, f)
+	log.SetOutput(multi)
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	flag.Parse()
