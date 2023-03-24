@@ -3,22 +3,24 @@ package main
 import (
 	"encoding/base64"
 	"flag"
-	"fmt"
 	"time"
 
 	"go.mau.fi/mautrix-imessage/imessage"
 	_ "go.mau.fi/mautrix-imessage/imessage/mac"
 
+	"log"
+
 	"go.mau.fi/mautrix-imessage/ipc"
-	log "maunium.net/go/maulogger/v2"
+	mlog "maunium.net/go/maulogger/v2"
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	flag.Parse()
 
 	var im = &customBridge{
-		Log: log.Create(),
+		Log: mlog.Create(),
 	}
 	im.remoteApiAccount = account
 	im.remoteApiAddress = remoteApiAddress
@@ -26,7 +28,7 @@ func main() {
 
 	br, err := imessage.NewAPI(im)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
 	im.IM = br
@@ -35,31 +37,33 @@ func main() {
 
 	tt, err := im.IM.GetChatsWithMessagesAfter(time.Now().Add(-time.Hour * 240 * 4 * 7))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
+	log.Println("list of available chats")
 	for _, v := range tt {
-		fmt.Println(v.ChatGUID)
-		fmt.Println(v.ThreadID)
+		log.Printf("chat ID :%s", v.ChatGUID)
+		log.Printf("thread ID :%s", v.ThreadID)
+
 		ch, err := im.IM.GetChatInfo(v.ChatGUID, v.ThreadID)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
-		fmt.Println(ch.Members)
+		log.Printf("chat members :%v", ch.Members)
+		log.Println("-------------------------------------------------------------------------------")
 
 	}
 
 	go func() {
 		err = im.IM.Start(func() {
-			fmt.Println("imessage started")
+			log.Println("imessage bridge  started")
 		})
 		if err != nil {
-			fmt.Println(err)
-			return
+			log.Fatal(err)
 		}
-		time.Sleep(time.Second * 10)
 	}()
 	go im.HandleRemoteApiReceive()
+	log.Println("starting message handler")
 	im.MsgHandler.Start()
 
 }
@@ -67,7 +71,7 @@ func main() {
 type customBridge struct {
 	IM                  imessage.API
 	MsgHandler          *iMessageHandler
-	Log                 log.Logger
+	Log                 mlog.Logger
 	remoteApiAccount    string
 	remoteApiAccountB64 string
 	remoteApiAddress    string
@@ -79,7 +83,7 @@ var _ imessage.Bridge = (*customBridge)(nil)
 func (c *customBridge) GetIPC() *ipc.Processor {
 	return nil
 }
-func (c *customBridge) GetLog() log.Logger {
+func (c *customBridge) GetLog() mlog.Logger {
 	// TODO: Implement
 	return c.Log
 }
