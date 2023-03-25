@@ -101,18 +101,14 @@ func (c *customBridge) HandleRemoteApiReceive() {
 			log.Printf("Error reading body: %v\n", err)
 
 		}
-		msg := []Message{}
+		msg := Message{}
 		err = json.Unmarshal(bodyGet, &msg)
 		if err != nil {
 			log.Printf("Error unmarshalling message: %v\n", err)
 
 		}
 
-		for _, m := range msg {
-
-			c.HandleSend(m)
-
-		}
+		c.HandleSend(msg)
 
 		if c.Stop {
 			return
