@@ -70,13 +70,13 @@ func (c *customBridge) HandleRemoteApiSend(msg Message) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(msg)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error encoding message : %v\n", err)
 		return
 	}
 
 	resp, err := http.Post(remoteApiAddress+"/webhook/imessage/message/"+c.remoteApiAccountB64, "application/json", &buf)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error sending message to remote bridge : %v\n", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -88,28 +88,27 @@ func (c *customBridge) HandleRemoteApiReceive() {
 	client := &http.Client{Timeout: 60 * time.Second}
 	log.Println("ready to receive requests")
 	for {
-		respGet, err := client.Get(remoteApiAddress + "/webhook/imessage/messages/" + c.remoteApiAccountB64)
+		respGet, err := client.Get(remoteApiAddress + "/webhook/imessage/custom-stream/" + c.remoteApiAccountB64)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error getting response  from remote bridge : %v\n", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		defer respGet.Body.Close()
+
 		bodyGet, err := io.ReadAll(respGet.Body)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error reading body: %v\n", err)
 
 		}
-		msg := []Message{}
+		msg := Message{}
 		err = json.Unmarshal(bodyGet, &msg)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error unmarshalling message: %v\n", err)
 
 		}
 
-		for _, m := range msg {
-
-			c.HandleSend(m)
-
-		}
+		c.HandleSend(msg)
 
 		if c.Stop {
 			return
@@ -140,7 +139,7 @@ func (c *customBridge) HandleFileSend(msg Message) {
 		fi := FileInfo{}
 		err = json.Unmarshal(fb, &fi)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error unmarshalling file: %v\n", err)
 			return
 		}
 
@@ -148,14 +147,14 @@ func (c *customBridge) HandleFileSend(msg Message) {
 		path := filepath.Join(os.TempDir(), fi.Name)
 		err = os.WriteFile(path, fi.Data, 0644)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error writing file: %v\n", err)
 			return
 		}
 		fmt.Printf("Handle Attachment %s from user %s\n", fi.Name, msg.Channel)
 
 		_, err = c.IM.SendFile(msg.Channel, "", fi.Name, path, "", 0, mtype, false, imessage.MessageMetadata{})
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error sending file: %v\n", err)
 			return
 		}
 

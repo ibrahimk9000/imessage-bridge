@@ -1,24 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
-
-	log "maunium.net/go/maulogger/v2"
 
 	"go.mau.fi/mautrix-imessage/imessage"
 )
 
 type iMessageHandler struct {
 	bridge *customBridge
-	log    log.Logger
 	stop   chan struct{}
 }
 
 func NewiMessageHandler(bridge *customBridge) *iMessageHandler {
 	return &iMessageHandler{
 		bridge: bridge,
-		log:    bridge.Log.Sub("iMessage"),
 		stop:   make(chan struct{}),
 	}
 }
@@ -33,49 +29,35 @@ func (imh *iMessageHandler) Start() {
 	messageStatuses := imh.bridge.IM.MessageStatusChan()
 	backfillTasks := imh.bridge.IM.BackfillTaskChan()
 	for {
-		start := time.Now()
-		var thing string
+
 		select {
 		case msg := <-messages:
 			imh.HandleMessage(msg)
-			thing = "message"
 		case rr := <-readReceipts:
 			imh.HandleReadReceipt(rr)
-			thing = "read receipt"
 		case notif := <-typingNotifications:
 			imh.HandleTypingNotification(notif)
-			thing = "typing notification"
 		case chat := <-chats:
 			imh.HandleChat(chat)
-			thing = "chat"
 		case contact := <-contacts:
 			imh.HandleContact(contact)
-			thing = "contact"
 		case status := <-messageStatuses:
 			imh.HandleMessageStatus(status)
-			thing = "message status"
 		case backfillTask := <-backfillTasks:
 			imh.HandleBackfillTask(backfillTask)
-			thing = "backfill task"
 		case <-imh.stop:
 			return
 		}
-		imh.log.Debugfln(
-			"Handled %s in %s (queued: %dm/%dr/%dt/%dch/%dct/%ds/%db)",
-			thing, time.Since(start),
-			len(messages), len(readReceipts), len(typingNotifications), len(chats), len(contacts), len(messageStatuses), len(backfillTasks),
-		)
+
 	}
 }
-
-const PortalBufferTimeout = 10 * time.Second
 
 func (imh *iMessageHandler) HandleMessage(msg *imessage.Message) {
 	chatID := msg.ChatGUID
 	threadID := msg.ThreadID
 	chat, err := imh.bridge.IM.GetChatInfo(chatID, threadID)
 	if err != nil {
-		imh.log.Warnln("Failed to get chat info for incoming message:", err)
+		log.Printf("Failed to get chat info for incoming message: %v\n", err)
 		return
 	}
 	channelID := chatID
@@ -136,23 +118,23 @@ func (imh *iMessageHandler) HandleMessage(msg *imessage.Message) {
 	}
 	imh.HandleAttachments(&mtbridgeMsg, msg)
 	imh.bridge.HandleRemoteApiSend(mtbridgeMsg)
-	fmt.Printf("Received  message: %s , from user %s\n", msg.Text, msg.Sender.LocalID)
+	log.Printf("Received  message: %s , from user %s\n", msg.Text, msg.Sender.LocalID)
 }
 
 func (imh *iMessageHandler) HandleMessageStatus(status *imessage.SendMessageStatus) {
-	fmt.Printf("Received message status: %+v", status)
+	log.Printf("Received message status: %+v", status)
 }
 
 func (imh *iMessageHandler) HandleReadReceipt(rr *imessage.ReadReceipt) {
-	fmt.Printf("Received read receipt: %+v", rr)
+	log.Printf("Received read receipt: %+v", rr)
 }
 
 func (imh *iMessageHandler) HandleTypingNotification(notif *imessage.TypingNotification) {
-	fmt.Printf("Received typing notification: %+v", notif)
+	log.Printf("Received typing notification: %+v", notif)
 }
 
 func (imh *iMessageHandler) HandleChat(chat *imessage.ChatInfo) {
-	fmt.Printf("Received chat info: %+v", chat)
+	log.Printf("Received chat info: %+v", chat)
 }
 
 func (imh *iMessageHandler) HandleBackfillTask(task *imessage.BackfillTask) {
@@ -160,14 +142,14 @@ func (imh *iMessageHandler) HandleBackfillTask(task *imessage.BackfillTask) {
 }
 
 func (imh *iMessageHandler) HandleContact(contact *imessage.Contact) {
-	fmt.Printf("Received contact: %+v", contact)
+	log.Printf("Received contact: %+v", contact)
 }
 func (imh *iMessageHandler) HandleAttachments(mtbrirdgeMsg *Message, msg *imessage.Message) {
 	for _, attach := range msg.Attachments {
-		fmt.Printf("Handle Attachment %s from user %s\n", attach.GetFileName(), msg.Sender.LocalID)
+		log.Printf("Handle Attachment %s from user %s\n", attach.GetFileName(), msg.Sender.LocalID)
 		data, err := attach.Read()
 		if err != nil {
-			imh.log.Warnln("Failed to read attachment:", err)
+			log.Printf("Failed to read attachment:%s", err)
 			continue
 		}
 
